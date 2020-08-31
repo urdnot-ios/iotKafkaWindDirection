@@ -5,7 +5,7 @@ organization := "com.urdnot.iot"
 
 name := "iotKafkaWindDirection"
 
-version := "1.0.0"
+version := "1.1.0"
 
 val scalaMajorVersion = "2.13"
 val scalaMinorVersion = "2"
@@ -14,7 +14,7 @@ scalaVersion := scalaMajorVersion.concat("." + scalaMinorVersion)
 
 libraryDependencies ++= {
   val sprayJsonVersion = "1.3.5"
-  val akkaHttpVersion = "10.1.12"
+  val circeVersion = "0.12.3"
   val logbackClassicVersion = "1.2.3"
   val scalatestVersion = "3.1.1"
   val akkaVersion = "2.5.30"
@@ -28,7 +28,10 @@ libraryDependencies ++= {
     "io.spray" %% "spray-json" % sprayJsonVersion,
     "ch.qos.logback" % "logback-classic" % logbackClassicVersion,
     "com.typesafe.akka" %% "akka-testkit" % akkaVersion % Test,
-//    "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % Test,
+    "io.circe" %% "circe-core" % circeVersion,
+    "io.circe" %% "circe-generic" % circeVersion,
+    "io.circe" %% "circe-parser" % circeVersion,
+    //    "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % Test,
     "org.scalatest" %% "scalatest" % scalatestVersion % Test,
     "com.typesafe.scala-logging" %% "scala-logging" % scalaLoggingVersion
   )
