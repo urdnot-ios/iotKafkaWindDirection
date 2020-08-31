@@ -6,6 +6,6 @@ The source data flows from an outdoor anemometer to a Kafka topic. This code pic
 
 ##### TODO (8/2020):
 1. ~~Upgrade to Scala 2.13.2~~
-2. Swap out Play JSON for circe
+2. Swap out Play JSON for circe (in progress)
 3. Improve error handling and future returns (My Akka Strems is pretty basic)
 4. Add tests with testcontainers
