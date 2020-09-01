@@ -12,16 +12,15 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.{LazyLogging, Logger}
-import io.circe
-import io.circe.Decoder
-import io.circe.generic.semiauto.deriveDecoder
-import io.circe.jawn.decode
+import com.urdnot.iot.DataProcessing.parseRecord
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, StringDeserializer}
-import scala.concurrent.{ExecutionContextExecutor, Future}
+
+import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success}
 
 
-object WindDirection extends LazyLogging with DataStructures {
+object WindDirection extends LazyLogging
+  with DataStructures {
 
   implicit val system: ActorSystem = ActorSystem("iot_wind_direction")
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
@@ -67,7 +66,7 @@ object WindDirection extends LazyLogging with DataStructures {
                 entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, data)
               ))
               valid
-            case Left(invalid) => invalid
+            case Left(invalid) => println(invalid)
           }
           case Failure(exception) => println(exception)
         }
@@ -76,9 +75,4 @@ object WindDirection extends LazyLogging with DataStructures {
     .run()
   //    curl -i -XPOST 'http://intel-server-02:8086/api/v2/write?bucket=home_sensors&precision=ns' --header 'Authorization: Token admin:aceace123' --data-raw 'windDirection,host=pi-weather,sensor=windDirection wind_degrees=0.0,wind_direction="N",voltage=-0.0815625 1598937011218000000'
 
-
-  def parseRecord(record: Array[Byte]): Future[Either[circe.Error, WindVaneReading]] = Future {
-    implicit val decoder: Decoder[WindVaneReading] = deriveDecoder[WindVaneReading]
-    decode[WindVaneReading](record.map(_.toChar).mkString)
-  }
 }
