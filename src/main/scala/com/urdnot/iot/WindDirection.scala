@@ -1,6 +1,10 @@
 package com.urdnot.iot
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.Uri.Query
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
 import akka.kafka.scaladsl.Consumer
 import akka.kafka.scaladsl.Consumer.DrainingControl
 import akka.kafka.{ConsumerSettings, Subscriptions}
@@ -8,14 +12,16 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.{LazyLogging, Logger}
-import io.circe.ParsingFailure
+import io.circe
+import io.circe.Decoder
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.jawn.decode
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, StringDeserializer}
-import spray.json.enrichAny
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
 
-object WindDirection extends LazyLogging {
+object WindDirection extends LazyLogging with DataStructures {
 
   implicit val system: ActorSystem = ActorSystem("iot_wind_direction")
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
@@ -28,82 +34,51 @@ object WindDirection extends LazyLogging {
     ConsumerSettings(consumerConfig, new StringDeserializer, new ByteArrayDeserializer)
       .withBootstrapServers(bootstrapServers)
 
-  //Influxdb
-  //  val influxdb: InfluxDB = InfluxDB.connect(envConfig.getString("influx.host"), envConfig.getInt("influx.port"))
-  //  val database: Database = influxdb.selectDatabase(envConfig.getString("influx.database"))
-
-  //  val INFLUXDB_URL = "http://" + envConfig.getString("influx.host") + ":" + envConfig.getInt("influx.port")
-  //  val USERNAME = "admin"
-  //  val PASSWORD = ""
-  //
-  //  val influxDB = InfluxDBFactory.connect(INFLUXDB_URL, USERNAME, PASSWORD)
-  //  influxDB.setDatabase(envConfig.getString("influx.database"))
-  //  // {'wind_degrees': 0.0, 'timestamp': 1553402644410L, 'wind_direction': 'N', 'voltage': 2.116125}
-
+  val INFLUX_URL: String = "http://" + envConfig.getString("influx.host") + ":" + envConfig.getInt("influx.port") + envConfig.getString("influx.route")
+  val INFLUX_USERNAME: String = envConfig.getString("influx.username")
+  val INFLUX_PASSWORD: String = envConfig.getString("influx.password")
+  val INFLUX_DB: String = envConfig.getString("influx.database")
+  val INFLUX_MEASUREMENT: String = "windDirection"
 
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   Consumer
     .plainSource(consumerSettings, Subscriptions.topics(envConfig.getString("kafka.topic")))
     .map { consumerRecord =>
-      //println(consumerRecord.value.map(_.toChar).mkString)
-      val parsedRecord: Future[Either[String, WindVaneReading]] = parseRecord(consumerRecord.value())
-      parsedRecord.onComplete{
-        case Success(x) => x match {
-          case Right(valid) => println("valid: " + valid)
-          case Left(invalid) => println("invalid: " + invalid)
+      parseRecord(consumerRecord.value())
+        .onComplete {
+          case Success(x) => x match {
+            case Right(valid) =>
+              val data =
+                s"""$INFLUX_MEASUREMENT,
+                   |host=pi-weather,sensor=windDirection
+                   |wind_degrees=${valid.wind_degrees},wind_direction="${valid.wind_direction}",voltage=${valid.voltage}
+                   |${valid.timestamp}000000""".stripMargin
+              Http().singleRequest(HttpRequest(
+                method = HttpMethods.POST,
+                uri = Uri(INFLUX_URL).withQuery(
+                  Query(
+                    "bucket" -> INFLUX_DB,
+                    "precision" -> "ns"
+                  )
+                ),
+                headers = Seq(Authorization(
+                  BasicHttpCredentials(INFLUX_USERNAME, INFLUX_PASSWORD))),
+                entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, data)
+              ))
+              valid
+            case Left(invalid) => invalid
+          }
+          case Failure(exception) => println(exception)
         }
-        case Failure(exception) => println(exception)
-      }
     }
     .toMat(Sink.ignore)(DrainingControl.apply)
     .run()
+  //    curl -i -XPOST 'http://intel-server-02:8086/api/v2/write?bucket=home_sensors&precision=ns' --header 'Authorization: Token admin:aceace123' --data-raw 'windDirection,host=pi-weather,sensor=windDirection wind_degrees=0.0,wind_direction="N",voltage=-0.0815625 1598937011218000000'
 
 
-  //
-  //
-  //  Consumer.committableSource(consumerSettings, Subscriptions.topics(envConfig.getString("kafka.topic")))
-  //    .runForeach { x =>
-  //      val record = x.record.value()
-  //      record.parseJson.convertTo[WindVaneReading]
-  //      val rawJson = record.map(_.toChar).mkString.replace("\'", "\"").replace("L", "")
-  //      val parsedJson = Json.parse(rawJson)
-  //      val jsonRecord = dataObjects.windDirectionData(
-  //        (parsedJson \ "timestamp").asOpt[Long],
-  //        (parsedJson \ "wind_degrees").asOpt[Double],
-  //        (parsedJson \ "wind_direction").asOpt[String],
-  //        (parsedJson \ "voltage").asOpt[Double]
-  //      )
-  //      val sensor = "windDirection"
-  //      val host = "pi-weather"
-
-  //      val windSpeedPoint = Point(sensor, jsonRecord.timeStamp.get)
-  //        .addTag("sensor", sensor)
-  //        .addTag("host", host)
-  //        .addField("wind_degrees", jsonRecord.windDegrees.get)
-  //        .addField("wind_direction", jsonRecord.windDirection.getOrElse(""))
-  //        .addField("voltage", jsonRecord.voltage.get)
-  //      Future(database.write(windSpeedPoint, precision = Precision.MILLISECONDS))
-
-
-  //    }
-  def parseRecord(record: Array[Byte]): Future[Either[String, WindVaneReading]] = Future{
-    import WindVaneSprayFormat._
-    import io.circe.Json
-    val testJsonString = """{"wind_degrees": 0.0, "timestamp": 1598900477034, "wind_direction": "N", "voltage": 0.9676875}"""
-    //    println(record.map(_.toChar).mkString.replace("\'", "\""))
-
-    //    val parsedJson: Either[ParsingFailure, Json] = io.circe.parser.parse(record.map(_.toChar).mkString.replace("\'", "\""))//.replace("L", ""))
-
-    val parsedJson: Either[ParsingFailure, Json] = io.circe.parser.parse(testJsonString)
-    parsedJson match {
-      case Right(x: Json) => println(x)
-      case Left(x) => println(x)
-    }
-    try {
-      Right(record.toJson.convertTo[WindVaneReading])
-    } catch {
-      case e: Exception => Left("couldn't parse: " + record.map(_.toChar).mkString + " because " + e.getMessage)
-    }
+  def parseRecord(record: Array[Byte]): Future[Either[circe.Error, WindVaneReading]] = Future {
+    implicit val decoder: Decoder[WindVaneReading] = deriveDecoder[WindVaneReading]
+    decode[WindVaneReading](record.map(_.toChar).mkString)
   }
 }

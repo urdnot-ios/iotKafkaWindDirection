@@ -12,18 +12,22 @@ val scalaMinorVersion = "2"
 
 scalaVersion := scalaMajorVersion.concat("." + scalaMinorVersion)
 
+
+
 libraryDependencies ++= {
   val sprayJsonVersion = "1.3.5"
   val circeVersion = "0.12.3"
   val logbackClassicVersion = "1.2.3"
   val scalatestVersion = "3.1.1"
   val akkaVersion = "2.5.30"
+  val AkkaHttpVersion = "10.2.0"
   val scalaLoggingVersion = "3.9.2"
   val akkaStreamKafkaVersion = "2.0.4"
   Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
     "com.typesafe.akka" %% "akka-stream-kafka" % akkaStreamKafkaVersion,
     "com.typesafe.akka" %% "akka-stream" % akkaVersion,
+    "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
     "com.lightbend.akka" %% "akka-stream-alpakka-influxdb" % "2.0.1",
     "io.spray" %% "spray-json" % sprayJsonVersion,
     "ch.qos.logback" % "logback-classic" % logbackClassicVersion,
