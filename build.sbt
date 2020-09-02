@@ -23,6 +23,8 @@ libraryDependencies ++= {
   val AkkaHttpVersion = "10.2.0"
   val scalaLoggingVersion = "3.9.2"
   val akkaStreamKafkaVersion = "2.0.4"
+  val testContainersVersion = "1.12.4"
+
   Seq(
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
     "com.typesafe.akka" %% "akka-stream-kafka" % akkaStreamKafkaVersion,
@@ -35,8 +37,8 @@ libraryDependencies ++= {
     "io.circe" %% "circe-core" % circeVersion,
     "io.circe" %% "circe-generic" % circeVersion,
     "io.circe" %% "circe-parser" % circeVersion,
-    //    "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % Test,
     "org.scalatest" %% "scalatest" % scalatestVersion % Test,
+    "org.testcontainers" % "kafka" %  testContainersVersion % Test,
     "com.typesafe.scala-logging" %% "scala-logging" % scalaLoggingVersion
   )
 }
