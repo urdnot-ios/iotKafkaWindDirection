@@ -82,14 +82,3 @@ dockerCommands := Seq(
   Cmd("ENV", "CLASSPATH=/opt/docker/application.conf:/opt/docker/logback.xml"),
   Cmd("ENTRYPOINT", s"java -cp /opt/docker/${assemblyJarName.value} com.urdnot.iot.WindVane")
 )
-
-// sbt clean
-// sbt assembly
-// sbt docker:publishLocal
-// docker image tag iotkafkawindvane:latest intel-server-03:5000/iotkafkawindvane
-// docker image push intel-server-03:5000/iotkafkawindvane
-// kubectl set image deployments/iot-kafka-windvane iot-kafka-windvane=intel-server-03:5000/iotkafkawindvane
-// just in case you need them:
-// kubectl apply -f iotKafkaWindVane.yaml
-// kubectl delete deployment iot-kafka-windvane
-// kubectl exec --stdin --tty iot-kafka-windvane -- /bin/bash

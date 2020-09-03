@@ -21,6 +21,16 @@ spec:
           env:
             - name: KAFKA_TOPIC
               value: windDirection
+            - name: INFLUX_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: influx-secrets
+                  key: username
+            - name: INFLUX_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: influx-secrets
+                  key: password
           envFrom:
             - configMapRef:
                 name: kafka-config
