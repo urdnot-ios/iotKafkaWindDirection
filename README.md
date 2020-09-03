@@ -8,4 +8,5 @@ The source data flows from an outdoor anemometer to a Kafka topic. This code pic
 1. ~~Upgrade to Scala 2.13.2~~
 2. ~~Swap out Play JSON for circe (in progress)~~
 3. ~~Improve error handling and future returns~~
-4. Add kafka and influxdb tests
+4. ~~Add Kubernetes deployment yaml~~
+5. Add some error handling for the Influx connection
