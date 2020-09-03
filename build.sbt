@@ -3,9 +3,9 @@ import sbt.Keys.mappings
 
 organization := "com.urdnot.iot"
 
-name := "iotKafkaWindDirection"
+name := "iotKafkaWindVane"
 
-version := "1.1.0"
+version := "2.2.0"
 
 val scalaMajorVersion = "2.13"
 val scalaMinorVersion = "2"
@@ -65,18 +65,6 @@ assemblyMergeStrategy in assembly := {
 
 // build the docker image
 
-/*
-1-change the version number
-2-sbt assembly
-3-sbt docker:publishLocal
-4-docker save -o iotkafkawinddirection.tar iotkafkawinddirection:latest
-5-copy
-6-sudo docker load -i iotkafkawinddirection.tar
-7-sudo docker run -m 500m --name=wind_direction --network=host -e TOPIC_START=latest -d iotkafkawinddirection:latest
---host networking needed for DNS resolution
---sudo not needed if docker is configured right
---give it some damn memory!
- */
 
 dockerBuildOptions += "--no-cache"
 dockerUpdateLatest := true
@@ -92,5 +80,16 @@ dockerCommands := Seq(
   Cmd("COPY", "opt/docker/application.conf", "/var/application.conf"),
   Cmd("COPY", "opt/docker/logback.xml", "/var/logback.xml"),
   Cmd("ENV", "CLASSPATH=/opt/docker/application.conf:/opt/docker/logback.xml"),
-  Cmd("ENTRYPOINT", s"java -cp /opt/docker/${assemblyJarName.value} com.urdnot.iot.api.HomeApiService")
+  Cmd("ENTRYPOINT", s"java -cp /opt/docker/${assemblyJarName.value} com.urdnot.iot.WindVane")
 )
+
+// sbt clean
+// sbt assembly
+// sbt docker:publishLocal
+// docker image tag iotkafkawindvane:latest intel-server-03:5000/iotkafkawindvane
+// docker image push intel-server-03:5000/iotkafkawindvane
+// kubectl set image deployments/iot-kafka-windvane iot-kafka-windvane=intel-server-03:5000/iotkafkawindvane
+// just in case you need them:
+// kubectl apply -f iotKafkaWindVane.yaml
+// kubectl delete deployment iot-kafka-windvane
+// kubectl exec --stdin --tty iot-kafka-windvane -- /bin/bash

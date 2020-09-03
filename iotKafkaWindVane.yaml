@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: IotKafkaWindvane
+  name: iot-kafka-windvane
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: iot-kafka-windvane
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: iot-kafka-windvane
+    spec:
+      containers:
+        - image: intel-server-03:5000/iotkafkawindvane:latest
+          name: iot-kafka-windvane
+          imagePullPolicy: Always
+          env:
+            - name: KAFKA_TOPIC
+              value: windDirection
+            - name: KAFKA_CONSUMER_GROUP
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-config
+                  key: KAFKA_CONSUMER_GROUP
+            - name: KAFKA_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-config
+                  key: KAFKA_SERVERS
+            - name: TOPIC_START
+              valueFrom:
+                configMapKeyRef:
+                  name: kafka-config
+                  key: TOPIC_START
+            - name: INFLUX_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: influx-config
+                  key: INFLUX_HOST
+            - name: INFLUX_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: influx-config
+                  key: INFLUX_PORT
+            - name: INFLUX_ROUTE
+              valueFrom:
+                configMapKeyRef:
+                  name: influx-config
+                  key: INFLUX_ROUTE
+            - name: INFLUX_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: influx-config
+                  key: INFLUX_DATABASE
+            - name: INFLUX_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: influx-config
+                  key: INFLUX_USERNAME
+            - name: INFLUX_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: influx-config
+                  key: INFLUX_PASSWORD

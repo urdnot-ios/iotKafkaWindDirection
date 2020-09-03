@@ -15,7 +15,7 @@ import com.typesafe.scalalogging.{LazyLogging, Logger}
 import com.urdnot.iot.DataProcessing.parseRecord
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, StringDeserializer}
 
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
 
@@ -49,11 +49,8 @@ object WindDirection extends LazyLogging
           case Success(x) => x match {
             case Right(valid) =>
               val data =
-                s"""$INFLUX_MEASUREMENT,
-                   |host=pi-weather,sensor=windDirection
-                   |wind_degrees=${valid.wind_degrees},wind_direction="${valid.wind_direction}",voltage=${valid.voltage}
-                   |${valid.timestamp}000000""".stripMargin
-              Http().singleRequest(HttpRequest(
+                s"""$INFLUX_MEASUREMENT,host=pi-weather,sensor=windDirection wind_degrees=${valid.wind_degrees},wind_direction="${valid.wind_direction}",voltage=${valid.voltage} ${valid.timestamp}000000""".stripMargin
+              val runInflux: Future[HttpResponse] = Http().singleRequest(HttpRequest(
                 method = HttpMethods.POST,
                 uri = Uri(INFLUX_URL).withQuery(
                   Query(
@@ -65,6 +62,11 @@ object WindDirection extends LazyLogging
                   BasicHttpCredentials(INFLUX_USERNAME, INFLUX_PASSWORD))),
                 entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, data)
               ))
+              println(data)
+              runInflux.onComplete{{
+                case Success(res) => println(res)
+                case Failure(_)   => sys.error("something went wrong")
+              }}
               valid
             case Left(invalid) => println(invalid)
           }
