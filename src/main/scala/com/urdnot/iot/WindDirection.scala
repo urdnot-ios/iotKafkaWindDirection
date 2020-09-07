@@ -14,7 +14,6 @@ import com.typesafe.config.Config
 import com.typesafe.scalalogging.{LazyLogging, Logger}
 import com.urdnot.iot.DataProcessing.parseRecord
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, StringDeserializer}
-
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
@@ -64,8 +63,12 @@ object WindDirection extends LazyLogging
               ))
               println(data)
               runInflux.onComplete{{
-                case Success(res) => println(res)
-                case Failure(_)   => sys.error("something went wrong")
+                case Success(res) => res match {
+                  case res if res.status.isFailure() => println(res.status.reason() + ": " + res.status.defaultMessage() + " Influx Message: " + res.headers(2))
+                  case res if res.status.isSuccess() => println(res)
+                  case _ => println("Influx failure: " + res)
+                }
+                case Failure(e)   => sys.error("something went wrong: " + e.getMessage)
               }}
               valid
             case Left(invalid) => println(invalid)
